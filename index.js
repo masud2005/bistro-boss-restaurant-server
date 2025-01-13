@@ -30,7 +30,10 @@ async function run() {
         const ourMenuCollection = client.db('bistroBossRestaurant').collection('ourMenu');
         const reviewCollection = client.db('bistroBossRestaurant').collection('reviews');
         const cartCollection = client.db('bistroBossRestaurant').collection('carts');
+        const usersCollection = client.db('bistroBossRestaurant').collection('users');
 
+
+        // Menu Related APIs
         // Get all Menu APIs
         app.get('/our-menu', async (req, res) => {
             const result = await ourMenuCollection.find().toArray();
@@ -38,32 +41,41 @@ async function run() {
         })
 
         // Get all Reviews APIs
-        app.get('/reviews', async(req, res) => {
+        app.get('/reviews', async (req, res) => {
             const result = await reviewCollection.find().toArray();
             res.send(result);
         })
 
         // Carts Related APIs
         // Get
-        app.get('/carts', async(req, res) => {
+        app.get('/carts', async (req, res) => {
             const email = req.query.email;
-            const query = {email: email}
+            const query = { email: email }
             const result = await cartCollection.find(query).toArray();
             res.send(result);
         })
 
         // Post
-        app.post('/carts', async(req, res) => {
+        app.post('/carts', async (req, res) => {
             const cartItem = req.body;
             const result = await cartCollection.insertOne(cartItem);
             res.send(result);
         })
 
         // Delete
-        app.delete('/carts/:id', async(req, res) => {
+        app.delete('/carts/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {_id: new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await cartCollection.deleteOne(query);
+            res.send(result);
+        })
+
+
+        // Users Related APIs
+        // Create
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            const result = await usersCollection.insertOne(user);
             res.send(result);
         })
 
