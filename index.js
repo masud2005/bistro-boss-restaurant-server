@@ -76,7 +76,15 @@ async function run() {
             res.send(result);
         })
 
-        app.post('/our-menu', verifyToken, verifyAdmin, async(req, res) => {
+        app.delete('/our-menu/:id', verifyToken, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await ourMenuCollection.deleteOne(query);
+            res.send(result);
+        })
+
+        // Add Item
+        app.post('/our-menu', verifyToken, verifyAdmin, async (req, res) => {
             const item = req.body;
             const result = await ourMenuCollection.insertOne(item);
             res.send(result);
