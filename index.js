@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken')
+const stripe = require('stripe')(`sk_test_51Qhl7xP3Cjs6shL6MoUd9NglJlImO6EZKoKwV3TLFEoBQa2EEvsFqKfIrAqZ9eajSGmZReBiErfHtYUZocD2RIaq00MJKRUoip`);
+// const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 require('dotenv').config()
 const app = express();
 const port = process.env.PORT || 5000;
@@ -32,6 +34,7 @@ async function run() {
         const reviewCollection = client.db('bistroBossRestaurant').collection('reviews');
         const cartCollection = client.db('bistroBossRestaurant').collection('carts');
         const usersCollection = client.db('bistroBossRestaurant').collection('users');
+        const paymentCollection = client.db('bistroBossRestaurant').collection('payments');
 
 
         // JWT Related APIs
@@ -209,6 +212,50 @@ async function run() {
             res.send(result);
         })
 
+
+        // payment intent
+        app.post('/create-payment-intent', async (req, res) => {
+            const { price } = req.body;
+            const amount = parseInt(price * 100);
+            // console.log(amount, 'amount inside the intent')
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            });
+
+            res.send({
+                clientSecret: paymentIntent.client_secret
+            })
+        });
+
+        // Payment save in the database
+        app.post('/payments', async (req, res) => {
+            const payment = req.body;
+            const paymentResult = await paymentCollection.insertOne(payment);
+
+            // Carefully delete each item from the cart
+            console.log('Payment info', payment);
+            const query = {
+                _id: {
+                    $in: payment.cartIds.map(id => new ObjectId(id))
+                }
+            };
+            const deleteResult = await cartCollection.deleteMany(query);
+
+            res.send({ paymentResult, deleteResult })
+        })
+
+        // Get Specific User All Payment
+        app.get('/payments/:email', verifyToken, async (req, res) => {
+            const query = { email: req.params.email }
+            if (req.params.email !== req.decoded.email) {
+                return res.status(403).send({ message: 'forbidden access' });
+            }
+            const result = await paymentCollection.find(query).toArray();
+            res.send(result);
+        })
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
